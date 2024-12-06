@@ -1,0 +1,60 @@
+services:
+  web-csharp:
+    build:
+      context: ./server1
+    depends_on:
+      - db-restaurant
+    environment:
+      - DB_HOST=db-restaurant
+      - DB_NAME=restaurant_db
+      - DB_USER=myuser
+      - DB_PASSWORD=mypassword
+
+  web-python:
+    build:
+      context: ./server2
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db-menu
+    environment:
+      - DB_HOST=db-menu
+      - DB_NAME=menu_db
+      - DB_USER=myuser
+      - DB_PASSWORD=mypassword
+
+  web-java:
+    build:
+      context: ./spring-gradle-multistage
+    ports:
+      - "8081:8081"
+    depends_on:
+      - web-csharp
+      - web-python
+    environment:
+      - SERVER1_URL=http://web-csharp:8082
+      - SERVER2_URL=http://web-python:8080
+
+  db-restaurant:
+    image: postgres
+    environment:
+      POSTGRES_DB: restaurant_db
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    volumes:
+      - pgdata-restaurant:/var/lib/postgresql/data
+      - ./server1/database1.sql:/docker-entrypoint-initdb.d/database1.sql
+
+  db-menu:
+    image: postgres
+    environment:
+      POSTGRES_DB: menu_db
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    volumes:
+      - pgdata-menu:/var/lib/postgresql/data
+      - ./server2/database2.sql:/docker-entrypoint-initdb.d/database2.sql
+
+volumes:
+  pgdata-restaurant:
+  pgdata-menu:
